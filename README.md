@@ -12,15 +12,18 @@ A structured repository documenting self-directed computational training, numeri
 
 ## Repository Structure
 
+**Self-directed Python, NumPy, and Pandas practice, organized by topic.**
 * `core_syntax_and_indexing/`: Applied exercises covering string manipulation on FASTA-style biological sequences and multi-slice sensor telemetry arrays.
 * `02_numpy_computational_arrays/`: Vectorized array operations and multi-variable numerical processing notebooks.
-* *(Upcoming)* `03_pandas_biochemical_curation/`: Data ingestion and cleaning pipelines tailored to multi-well plate reader outputs and chromatography fractions.
+* *(In Progress)* `03_pandas_biochemical_curation/`: Data ingestion and cleaning pipelines tailored to multi-well plate reader outputs and chromatography fractions.
 
 ---
 
 ## Research Application 
-This repository connects experimental biochemistry with quantitative data analysis, building the computational foundation for PhD research in Biomedical Engineering. Current application includes:
-1. Automated peak detection, baseline correction, and integration for FPLC UV absorbance chromatograms.
+This repository connects experimental biochemistry with quantitative data analysis and builds the computational foundation for PhD research in Biomedical Engineering. Current applications include:
+1. FPLC Peak Integration
+
+Reported protein yield is the integrated area under an elution peak, and the area depends on where you draw the baseline. This pipeline estimates the baseline and characterizes the error in that estimate before integrating anything.
 
    ## Pipeline
    | Stage | Status |
@@ -39,20 +42,29 @@ This repository connects experimental biochemistry with quantitative data analys
    * The data is simulated. The generator was written separately and is not included here, so the analysis cannot see the true peak areas.
    * **Recovered values can be scored against time afterward.**
 
-   ## Approach used so far
+   ## Method
 
-   * The baseline is estimated by splitting the run into equal windows, taking a low percentile of each, and interpolating in a linear fashion between those anchor points.
-   * **Assumption:** The elution peaks only add absorbance, so the lowest values in a window are the least peak-contaminated. This holds for well-behaved UV traces, but fails whenever the signal can dip below the baseline, which can occur through a refractive index mismatch at gradient transitions, air bubbles present in the column, or changes in the buffer absorbance. Those regions would need separate handling.
-   * **Edge Clamping:** ´np.interp´ holds values flat outside the range of the first and last anchor times ($t=1.98$ and $t=58.02$). The baseline does not track drift in the first and last two minutes of the run, and those regions should be flagged as unreliable.
-   * **Window Size:** 1200 points over 60 min is 0.05 min/point, so ´window_size = 80´ is a 4-minute window against peaks 1-2 min wide. There were two constraints that set this:
-     a. Wider than the widest peak - otherwise a window falls inside a peak and the method subtacts the peak from itself.
-     b. Narrower than the scale of baseline curvature - otherwise the interpolation cannot track the drift.
-   * The big question! **Why not AsLS?** As known, asymmetric least squares, SNIP, and rolling-ball are the standard approaches and would likely perform better. Windowed percentile was picked because its failure modes are tractable, meaning that the bias below is predictable in closed form than dependent on a tuned smoothing parameter.
-   * **Error Characterization:** By analyzing the extreme-value statistical bias of the initial baseline anchors, the estimator was swapped to a windowed 10th-percentile, reducing the residual baseline offset by nearly 60%.
+   * The baseline is estimated by splitting the run into equal windows, taking a low percentile of each as an anchor, and interpolating in a linear fashion between those anchors and subtracted.
+   * **Assumption:** The elution peaks only add absorbance, so the lowest values in a window are the least peak-contaminated. This holds for well-behaved UV traces, but fails whenever the signal dips below the baseline, which can occur through a refractive index mismatch at gradient transitions, air bubbles in the column, or changes in buffer absorbance. Those regions would need separate handling.
+
+   ## Result
+
+   * The first implementation used the window **minimum** and left a systematic  **+0.011630 AU** residual over a peak-free interval (50-56 min).
+   * The offset is a property of the estimator rather than an implementation error: the minimum of n samples sits below the distribution mean by an amount that grows with n. Replacing the anchor with the **10th percentile** reduced the residual to **+0.004768**, a 59% reduction, measured by running both anchors over identical windows against the same evaluation interval.
+   * The residual is positive, so the estimated baseline sits *below* the true one.
+   * Propagated through integration, that inflates each peak area by approximately (offset x peak width), negligible for a tall peak, substantial for a short one.
+
+   ## Known Limitations
+
+   * The baseline is edge-clamped in the first and last two minutes.
+   * The method assumes peaks only add absorbance.
+   * The evaluation interval lies inside the windows used to compute the anchors, so the residual is an in-sample estimate. A held-out quiet region would be a stronger test.
+   * Peaks are simulated as Gaussians, while real chromatographic peaks have tails.
     
    ## Running it
 
    * Open 'FPLC_peak_integration.ipynb' and run all cells. Requires NumPy and matplotlib.
   
-    ---
+    --- Future Work ---
 2.  Non-linear parameter estimation for allosteric enzyme kinetics (Michaelis-Menten / Hill formulations).
+   * Motivated by the same problem as the FPLC pipeline: A reported Vmax or Km is the output of a fit, and the reliability of that fit is rarely reported next to it.
