@@ -65,6 +65,6 @@ Reported protein yield is the integrated area under an elution peak, and the are
 
    * Open 'FPLC_peak_integration.ipynb' and run all cells. Requires NumPy and matplotlib.
   
-    --- Future Work ---
+   ### Future Work
 2.  Non-linear parameter estimation for allosteric enzyme kinetics (Michaelis-Menten / Hill formulations).
    * Motivated by the same problem as the FPLC pipeline: A reported Vmax or Km is the output of a fit, and the reliability of that fit is rarely reported next to it.
