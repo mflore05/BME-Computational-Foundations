@@ -11,7 +11,7 @@ Reported protein yield is the integrated area under an elution peak, and that ar
    |---|---|
    | 1. Load and inspect the trace | done |
    | 2. Baseline estimation and subtraction | done |
-   | 3. Peak detection | not started |
+   | 3. Peak detection | In Progress |
    | 4. Peak boundary assignment | not started |
    | 5. Trapezoidal integration  | not started |
    | 6. Validation against known areas | not started |
